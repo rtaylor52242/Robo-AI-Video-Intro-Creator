@@ -3,13 +3,12 @@ import { generateVideo } from './services/geminiService';
 import type { ImageFile, AspectRatio } from './types';
 import { LOADING_MESSAGES, RANDOM_PROMPTS } from './constants';
 
-// Fix: Define AIStudio type to resolve declaration conflicts, as suggested by the error message.
-interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-}
-
+// Fix for TS2717 & TS2428: Moved AIStudio interface into declare global block to resolve type conflicts.
 declare global {
+    interface AIStudio {
+        hasSelectedApiKey: () => Promise<boolean>;
+        openSelectKey: () => Promise<void>;
+    }
     interface Window {
         aistudio: AIStudio;
     }
@@ -27,6 +26,13 @@ const FilmIcon: React.FC<{className?: string}> = ({className}) => (
     </svg>
 );
 
+const HelpIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || "w-6 h-6"}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+    </svg>
+);
+
+
 const LoadingOverlay: React.FC<{ message: string }> = ({ message }) => (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
         <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-indigo-500"></div>
@@ -34,22 +40,62 @@ const LoadingOverlay: React.FC<{ message: string }> = ({ message }) => (
     </div>
 );
 
-const ApiKeyPrompt: React.FC<{ onSelectKey: () => void }> = ({ onSelectKey }) => (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 p-4">
-        <div className="text-center max-w-lg p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
-            <FilmIcon className="w-16 h-16 mx-auto text-indigo-400" />
-            <h2 className="text-3xl font-bold text-white mt-6 mb-2">Welcome to Robo AI Video Creator</h2>
-            <p className="text-gray-300 mb-6">To generate stunning AI videos, you need to select a Gemini API key. Your key is used securely and only for your requests.</p>
-            <p className="text-sm text-gray-400 mb-6">For information about billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.</p>
+const ApiKeySelectionScreen: React.FC<{ onSelect: () => void }> = ({ onSelect }) => (
+    <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="max-w-md w-full bg-gray-800 p-8 rounded-2xl shadow-lg text-center border border-gray-700">
+            <h1 className="text-3xl font-bold text-indigo-400 mb-4">Welcome!</h1>
+            <p className="text-gray-300 mb-6">To generate videos with the Veo model, you need to select an API key. This is a required step before you can use the app.</p>
             <button
-                onClick={onSelectKey}
-                className="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-500 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500"
+                onClick={onSelect}
+                className="w-full text-lg font-bold py-3 px-6 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition-all duration-300 transform hover:scale-105"
             >
-                Select API Key to Begin
+                Select API Key
             </button>
+            <p className="text-xs text-gray-500 mt-4">
+                For more information on billing, please visit the{' '}
+                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
+                    official documentation
+                </a>.
+            </p>
         </div>
     </div>
 );
+
+const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-xl max-w-2xl w-full p-6 sm:p-8 relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors" aria-label="Close help modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <h2 className="text-3xl font-bold mb-6 text-indigo-400">How to Use This App</h2>
+                <div className="space-y-4 text-gray-300">
+                    <p>Follow these simple steps to create your cinematic video intro:</p>
+                    <ol className="list-decimal list-inside space-y-3 pl-2">
+                        <li><span className="font-semibold text-indigo-300">API Key:</span> If prompted, select your Google AI Studio API key. This is a necessary first step to power the video generation.</li>
+                        <li><span className="font-semibold text-indigo-300">Upload Image:</span> Click the upload area to choose an image from your device. This image will be the starting point for your video.</li>
+                        <li><span className="font-semibold text-indigo-300">Describe Your Vision:</span> Write a short description of the video you want to create. For example, "A futuristic city with flying cars." If you leave this blank, a random, cool prompt will be chosen for you!</li>
+                        <li><span className="font-semibold text-indigo-300">Choose Aspect Ratio:</span> Select '16:9' for a standard widescreen (landscape) video, or '9:16' for a vertical (portrait) video, perfect for mobile.</li>
+                        <li><span className="font-semibold text-indigo-300">Generate Video:</span> Hit the "Generate Video" button. The AI can take a few minutes to work its magic, so please be patient. You'll see reassuring messages while you wait.</li>
+                        <li><span className="font-semibold text-indigo-300">Enjoy & Download:</span> Once finished, your video will appear at the bottom. You can watch it, and use the download button to save it.</li>
+                    </ol>
+                </div>
+                <div className="mt-8 text-center">
+                    <button
+                        onClick={onClose}
+                        className="text-lg font-bold py-2 px-8 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition-all duration-300 transform hover:scale-105"
+                    >
+                        Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 
 export default function App() {
@@ -60,25 +106,25 @@ export default function App() {
     const [loadingMessage, setLoadingMessage] = useState<string>('');
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isKeySelected, setIsKeySelected] = useState<boolean>(false);
+    const [apiKeyReady, setApiKeyReady] = useState<boolean>(false);
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const checkApiKey = useCallback(async () => {
-        if (window.aistudio) {
-            const hasKey = await window.aistudio.hasSelectedApiKey();
-            setIsKeySelected(hasKey);
-        } else {
-             // Fallback for when aistudio is not available
-            setTimeout(checkApiKey, 500);
-        }
+    useEffect(() => {
+        const checkApiKey = async () => {
+            try {
+                const hasKey = await window.aistudio.hasSelectedApiKey();
+                setApiKeyReady(hasKey);
+            } catch (e) {
+                console.error("Could not check for API key", e);
+                // Assume it's not ready if the check fails
+                setApiKeyReady(false);
+            }
+        };
+        checkApiKey();
     }, []);
 
     useEffect(() => {
-        checkApiKey();
-    }, [checkApiKey]);
-
-    useEffect(() => {
-        // Fix: Use ReturnType<typeof setInterval> for browser compatibility instead of NodeJS.Timeout.
         let interval: ReturnType<typeof setInterval>;
         if (isLoading) {
             setLoadingMessage(LOADING_MESSAGES[0]);
@@ -93,17 +139,18 @@ export default function App() {
         return () => clearInterval(interval);
     }, [isLoading]);
 
-    const handleSelectKey = async () => {
+    const handleSelectApiKey = async () => {
         try {
             await window.aistudio.openSelectKey();
-            // Optimistically assume selection was successful.
-            setIsKeySelected(true);
-        } catch (e) {
-            console.error("Error opening API key selection:", e);
-            setError("Could not open API key selection. Please try again.");
+            // Assume key selection is successful to avoid race conditions
+            setApiKeyReady(true);
+        } catch(e) {
+            console.error("Could not open API key selection", e);
+            setError("There was an issue with the API key selection dialog.");
         }
     };
-    
+
+
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
@@ -138,8 +185,8 @@ export default function App() {
             console.error(e);
             let errorMessage = e.message || "An unknown error occurred.";
             if (errorMessage.includes("Requested entity was not found")) {
-                errorMessage = "API Key is invalid or not found. Please select a valid key.";
-                setIsKeySelected(false);
+                errorMessage = "API Key is invalid or not found. Please select a valid API key to continue.";
+                setApiKeyReady(false); // Reset to show API key selection screen
             }
             setError(errorMessage);
         } finally {
@@ -147,15 +194,28 @@ export default function App() {
         }
     };
 
-    if (!isKeySelected) {
-        return <ApiKeyPrompt onSelectKey={handleSelectKey} />;
+    if (!apiKeyReady) {
+        return (
+            <div className="min-h-screen bg-gray-900 text-white">
+                <ApiKeySelectionScreen onSelect={handleSelectApiKey} />
+            </div>
+        )
     }
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
             {isLoading && <LoadingOverlay message={loadingMessage} />}
-            <div className="max-w-4xl mx-auto">
-                <header className="text-center mb-8">
+            <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
+            <div className="max-w-4xl mx-auto relative">
+                 <button
+                    onClick={() => setIsHelpModalOpen(true)}
+                    className="absolute top-0 right-0 text-gray-400 hover:text-indigo-400 transition-colors z-10 p-2"
+                    aria-label="Show help"
+                >
+                    <HelpIcon className="w-8 h-8" />
+                </button>
+
+                <header className="text-center mb-8 pt-10 sm:pt-0">
                     <div className="flex items-center justify-center gap-3">
                          <FilmIcon className="w-10 h-10 text-indigo-400"/>
                         <h1 className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500">
