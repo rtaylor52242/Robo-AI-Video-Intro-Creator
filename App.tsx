@@ -3,16 +3,16 @@ import { generateVideo } from './services/geminiService';
 import type { ImageFile, AspectRatio } from './types';
 import { LOADING_MESSAGES, RANDOM_PROMPTS } from './constants';
 
-// Fix for TS2717 & TS2428: Moved AIStudio interface into declare global block to resolve type conflicts.
-declare global {
-    interface AIStudio {
-        hasSelectedApiKey: () => Promise<boolean>;
-        openSelectKey: () => Promise<void>;
-    }
-    interface Window {
-        aistudio: AIStudio;
-    }
+// Define the AIStudio interface locally to avoid global declaration conflicts
+interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
 }
+
+// Helper to safely access window.aistudio
+const getAIStudio = (): AIStudio => {
+    return (window as any).aistudio;
+};
 
 const UploadIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || "w-10 h-10 text-gray-400"}>
@@ -113,7 +113,7 @@ export default function App() {
     useEffect(() => {
         const checkApiKey = async () => {
             try {
-                const hasKey = await window.aistudio.hasSelectedApiKey();
+                const hasKey = await getAIStudio().hasSelectedApiKey();
                 setApiKeyReady(hasKey);
             } catch (e) {
                 console.error("Could not check for API key", e);
@@ -141,7 +141,7 @@ export default function App() {
 
     const handleSelectApiKey = async () => {
         try {
-            await window.aistudio.openSelectKey();
+            await getAIStudio().openSelectKey();
             // Assume key selection is successful to avoid race conditions
             setApiKeyReady(true);
         } catch(e) {
@@ -219,7 +219,7 @@ export default function App() {
                     <div className="flex items-center justify-center gap-3">
                          <FilmIcon className="w-10 h-10 text-indigo-400"/>
                         <h1 className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500">
-                            Robo AI Video Intro Creator
+                            Robo AI - Video Intro Creator
                         </h1>
                     </div>
                     <p className="mt-4 text-lg text-gray-300">Turn your image into a cinematic masterpiece.</p>

@@ -1,5 +1,5 @@
 {
-  "name": "Robo AI Video Intro Creator",
+  "name": "Robo AI - Video Intro Creator",
   "description": "Upload an image and provide a description to generate a stunning, movie-style video intro using Google's Veo AI model. If you don't provide a description, a random one will be generated for you.",
   "requestFramePermissions": []
 }
